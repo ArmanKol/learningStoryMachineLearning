@@ -1,4 +1,5 @@
 import json
+import requests
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -15,6 +16,41 @@ def convert(seconds):
     hour, min = divmod(min, 60)
     return "%d:%02d:%02d" % (hour, min, sec)
 
+def postRule(postObject):
+    print()
+
+
+def ruleGenereren(tijd, ruleAB, status):
+    URL = 'http://localhost:8080/rest/rules/'
+
+    data = {}
+    actions = {}
+    triggers = {}
+
+    configurationTrigger = {}
+    configurationAction = {}
+
+    triggers['id'] = 2
+    triggers['label'] = "it is a fixed time of day"
+    triggers['description'] = "Triggers at a specified time"
+    configurationTrigger['time'] = tijd
+    triggers['configuration'] = configurationTrigger
+    triggers['type'] = "timer.TimeOfDayTrigger"
+
+    actions['id'] = 3
+    actions['label'] = "send a command"
+    actions['description'] = "Sends a command to a specified item."
+    configurationAction['itemName'] = "bathroomWashingMachine_1_Relay"
+    configurationAction['command'] = status
+    actions['configuration'] = configurationAction
+    actions['type'] = "core.ItemCommandAction"
+
+    data['triggers'] = [triggers]
+    data['actions'] = [actions]
+    data['name'] = "TESTT"+"_"+ruleAB
+
+    json_data = json.dumps(data)
+    requests.post(URL, data=json_data, headers={"content-type": "application/json"})
 
 learningData = pd.read_csv("test.csv")
 df = pd.DataFrame(learningData)
@@ -70,7 +106,3 @@ stand_prediction = knn.predict([[0,0]])
 stand_prediction
 
 print(convert(stand_prediction[0]))
-
-data = {}
-data['key'] = 'value'
-json_data = json.dumps(data)
