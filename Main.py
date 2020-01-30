@@ -75,8 +75,8 @@ def runKnn(stand, dag, kamer):
     print('Aantal trainwaarden {0:d}'.format(len(X_train)))
     print('Aantal testwaarden {0:d}'.format(len(y_test)))
 
-    # Het indelen van groepen x aantal groepen
-    knn = KNeighborsClassifier(n_neighbors=2)
+    # Met hoeveel punten er vergeleken wordt.
+    knn = KNeighborsClassifier(n_neighbors=3)
     # Trainen van de data
     knn.fit(X_train, y_train)
     # laat de classifier de testset berekenen
@@ -85,11 +85,10 @@ def runKnn(stand, dag, kamer):
     print("Score:")
     print(knn.score(X_train, y_train))
 
-    # voorspel voor een bepaalde stand, dag, kamer
+    # voorspel tijd met stand, dag, kamer
     stand_prediction = knn.predict([[stand, dag, kamer]])
     print("Stand_prediction:")
 
-    #print(dict_switch[stand_prediction[0]])
     return convert(stand_prediction[0])
 
 def runDecisionThree(stand, dag, kamer):
@@ -114,7 +113,8 @@ def runDecisionThree(stand, dag, kamer):
     print('Aantal trainwaarden {0:d}'.format(len(X_train)))
     print('Aantal testwaarden {0:d}'.format(len(y_test)))
 
-    tree_clf = DecisionTreeClassifier(max_depth=2, random_state=42)
+
+    tree_clf = DecisionTreeClassifier(max_depth=2, random_state=0)
     tree_clf.fit(X, y)
 
     print("Score:")
