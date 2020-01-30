@@ -75,7 +75,7 @@ def runKnn(stand, dag, kamer):
     print('Aantal trainwaarden {0:d}'.format(len(X_train)))
     print('Aantal testwaarden {0:d}'.format(len(y_test)))
 
-    # Met hoeveel punten er vergeleken wordt.
+    # Met hoeveel punten er vergeleken wordt
     knn = KNeighborsClassifier(n_neighbors=3)
     # Trainen van de data
     knn.fit(X_train, y_train)
