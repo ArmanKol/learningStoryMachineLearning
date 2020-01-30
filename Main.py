@@ -1,11 +1,8 @@
 import json
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import confusion_matrix
-from sklearn import metrics
 from sklearn.tree import DecisionTreeClassifier
 from random import randrange
 
@@ -19,8 +16,9 @@ def convert(seconds):
     return "%d:%02d:%02d" % (hour, min, sec)
 
 def opslaanRule():
-    ruleGenereren(runDecisionThree(1, 0, 0), "A", "ON")
-    ruleGenereren(runDecisionThree(0, 0, 0), "B", "OFF")
+    ruleGenereren(runKnn(1, 0, 0), "A", "ON")
+    ruleGenereren(runKnn(0, 0, 0), "B", "OFF")
+    print(runKnn(1, 0, 0))
 
 def ruleGenereren(tijd, ruleAB, status):
     URL = 'http://localhost:8080/rest/rules/'
@@ -55,19 +53,10 @@ def ruleGenereren(tijd, ruleAB, status):
     json_data = json.dumps(data)
     requests.post(URL, data=json_data, headers={"content-type": "application/json"})
 
-def runKnn():
+def runKnn(stand, dag, kamer):
     learningData = pd.read_csv("test.csv")
-
     learningData['datum'] = learningData['datum'].astype('datetime64')
-    learningData['tijd'] = learningData['datum'].dt.time
     learningData['datum'] = learningData['datum'].dt.date
-    learningData['tijd'] = learningData['tijd'].astype('str')
-    print(learningData.dtypes)
-
-    seconds = []
-
-    for i in learningData['tijd']:
-        seconds.append(get_sec(i))
 
     for j in learningData['stand']:
         if ('ON' in j):
@@ -75,18 +64,8 @@ def runKnn():
         if ('OFF' in j):
             learningData['stand'] = learningData['stand'].str.replace('OFF', '0')
 
-    for k in learningData['datum']:
-        learningData['dag'] = k.weekday()+1
-
-
-    learningData['seconds'] = seconds
     learningData = learningData.drop(columns="datum")
 
-    dict_switch = dict(zip(learningData['id'].unique(),learningData['stand'].unique()))
-    print("dict_switch:")
-    print(dict_switch)
-
-    print(learningData.head())
     #X = input, Y=output
     X=learningData[['stand', 'dag', 'kamer']]
     y=learningData['seconds']
@@ -96,49 +75,27 @@ def runKnn():
     print('Aantal trainwaarden {0:d}'.format(len(X_train)))
     print('Aantal testwaarden {0:d}'.format(len(y_test)))
 
-    k_range = range(1,26)
-    scores = {}
-    scores_list = []
+    # Het indelen van groepen x aantal groepen
+    knn = KNeighborsClassifier(n_neighbors=2)
+    # Trainen van de data
+    knn.fit(X_train, y_train)
+    # laat de classifier de testset berekenen
+    y_knn = knn.predict(X_test)
 
-    for k in k_range:
-        # Het indelen van groepen x aantal groepen
-        knn = KNeighborsClassifier(n_neighbors=2)
-        # Trainen van de data
-        knn.fit(X_train, y_train)
-        # laat de classifier de testset berekenen
-        y_knn = knn.predict(X_test)
-        # controleer de nauwkeurigheid met de test data
-        scores[k] = metrics.accuracy_score(y_test, y_knn)
-        scores_list.append(metrics.accuracy_score(y_test, y_knn))
+    print("Score:")
+    print(knn.score(X_train, y_train))
 
-    plt.plot(k_range, scores_list)
-    plt.xlabel('value of K for KNN')
-    plt.ylabel('Tesint Accuracy')
-    #plt.show()
-
-    # controleer met een confusion matrix
-    cm = confusion_matrix(y_test,y_knn)
-    print(cm)
-
-    # voorspel voor een bepaalde seconds, dag, kamer
-    stand_prediction = knn.predict([[0, 0, 0]])
+    # voorspel voor een bepaalde stand, dag, kamer
+    stand_prediction = knn.predict([[stand, dag, kamer]])
     print("Stand_prediction:")
 
     #print(dict_switch[stand_prediction[0]])
-    print(convert(stand_prediction[0]))
+    return convert(stand_prediction[0])
 
-def runDecisionThree(status, dag, kamer):
+def runDecisionThree(stand, dag, kamer):
     learningData = pd.read_csv("test.csv")
-
     learningData['datum'] = learningData['datum'].astype('datetime64')
-    learningData['tijd'] = learningData['datum'].dt.time
     learningData['datum'] = learningData['datum'].dt.date
-    learningData['tijd'] = learningData['tijd'].astype('str')
-
-    seconds = []
-
-    for i in learningData['tijd']:
-        seconds.append(get_sec(i))
 
     for j in learningData['stand']:
         if ('ON' in j):
@@ -146,10 +103,6 @@ def runDecisionThree(status, dag, kamer):
         if ('OFF' in j):
             learningData['stand'] = learningData['stand'].str.replace('OFF', '0')
 
-    for k in learningData['datum']:
-        learningData['dag'] = k.weekday() + 1
-
-    learningData['seconds'] = seconds
     learningData = learningData.drop(columns="datum")
 
     # X = input, Y=output
@@ -168,7 +121,7 @@ def runDecisionThree(status, dag, kamer):
     print(tree_clf.score(X_train, y_train))
 
     # voorspel tijd met stand, dag, kamer
-    stand_prediction = tree_clf.predict([[status, dag, kamer]])
+    stand_prediction = tree_clf.predict([[stand, dag, kamer]])
 
     return convert(stand_prediction[0])
 
